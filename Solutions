@@ -1,0 +1,225 @@
+The Shared solution has additions by the author and its not the best that you follow these and theres a possibility of you doing in a different and better way, i learned things on the way, purpose is not to initate rote learning, but to give a glimpse and be of lil assistance to selflearning and selfhelp. Hope it Helps.
+Solutions:
+
+-- Basics
+-- Q1 Retrieve the total number of orders placed.
+
+ select count(order_id) as Total_Orders_Placed from orders;
+
+
+-- Q2 Calculate the total revenue generated from pizza sales.
+
+  select round(sum(order_details.quantity * pizzas.price),2) as Total_Sales
+ from order_details join pizzas
+  on pizzas.pizza_id = order_details.pizza_id
+
+-- Q3 Identify the highest-priced pizza.
+
+ SELECT 
+     pizza_types.name, pizzas.price
+ FROM
+     pizza_types
+         JOIN
+     pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+ ORDER BY pizzas.price DESC
+ LIMIT 01;
+
+Q4 Identify the most common pizza size ordered.
+
+
+--  SELECT 
+--      pizzas.size, COUNT(order_details.quantity) AS Order_Count_By
+--  FROM
+--      pizzas
+--          JOIN
+--      order_details ON pizzas.pizza_id = order_details.pizza_id
+--  GROUP BY pizzas.size
+--  ORDER BY Order_Count_By DESC Limit 05 ;
+
+-- --The other way of doing it 
+ select pizzas.size, count(order_details.order_details_id)
+ from pizzas join order_details
+ on pizzas.pizza_id = order_details.pizza_id
+ group by pizzas.size;
+
+-- Yet another way of doing it
+-- SELECT 
+--     COUNT(order_details.quantity), pizzas.size AS Order_Count_By
+-- FROM
+--     pizzas
+--         JOIN
+--     order_details ON pizzas.pizza_id = order_details.pizza_id
+-- GROUP BY pizzas.size
+-- ORDER BY Order_Count_By aSC Limit 03 ;
+
+ Q5 List the top 5 most ordered pizza types along with their quantities.
+
+--  SELECT 
+--       pizza_types.name, SUM(order_details.quantity) AS Qty_Ordered
+--   FROM
+--       pizza_types
+--           JOIN
+--       pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+--           JOIN
+--       order_details ON order_details.pizza_id = pizzas.pizza_id
+--   GROUP BY pizza_types.name
+--   ORDER BY Qty_Ordered DESC
+--   LIMIT 5;
+
+--  IF IT HAS TO BE ALPHABETICAL YOU CAN USE THE NAME BASED COLUMN AS A BASIS OF ORDER
+
+ SELECT 
+        SUM(order_details.quantity)AS Qty_Ordered,pizza_types.name AS PIZZAS_NAME
+   FROM
+       pizza_types
+           JOIN
+       pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+           JOIN
+       order_details ON order_details.pizza_id = pizzas.pizza_id
+   GROUP BY pizza_types.name
+   ORDER BY PIZZAS_NAME aSC
+   -- LIMIT 10;
+
+-- Intermediate
+-- Q6
+-- join the necessary tables to find the total quantity of each pizza category ordered.
+
+ SELECT 
+     pizza_types.category,
+     SUM(order_details.quantity) AS Quantity_Ordered
+ FROM
+     pizza_types
+         JOIN
+     pizzas ON pizza_types.pizza_type_id = pizzas.pizza_type_id
+         JOIN
+     order_details ON order_details.pizza_id = pizzas.pizza_id
+ GROUP BY pizza_types.category
+ ORDER BY Quantity_Ordered DESC;
+
+Q7 -- Determine the distribution of orders by hour of the day.
+ select hour(oder_time) as HourDay, count(order_id) as Order_Quantities_Hr_Based
+ from orders 
+ group by hour(oder_time) ;
+
+Q8- Join relevant tables to find the category-wise distribution of pizzas.
+
+select category, count(name) from pizza_types
+group by category;
+
+Q9 Group the orders by date and calculate the average number of pizzas ordered per day.
+
+ select round(avg(Total_Order),00) as Average_Order_Per_Day_YEAR from -- avg round is zero as order cant be a half or decimal order.
+(select orders.order_date as OrdDate, sum(order_details.quantity) as Total_Order
+from orders
+join order_details
+on orders.order_id = order_details.order_id
+group by OrdDate) 
+as Total_Annual_Order
+;
+
+Q10 -- Determine the top 3 most ordered pizza types based on revenue.
+
+SELECT 
+    pizzas.pizza_type_id AS PIZZA_TYPE,
+    ROUND(SUM(order_details.quantity * pizzas.price),0) AS REVENUE,
+    pizza_types.name AS PIZZA_NAME, pizza_types.ingredients AS CONTAINS
+FROM
+    pizzas
+        JOIN
+    order_details ON pizzas.pizza_id = order_details.pizza_id
+    JOIN pizza_types 
+ON pizzas.pizza_type_id = pizza_types.pizza_type_id
+GROUP BY pizzas.pizza_type_id,PIZZA_NAME, CONTAINS
+order by REVENUE DESC limit 3; 
+-- A SELECT FROM A DIFFERENT TABLE REQUIRES A JOIN AND ALSO GOES INTO GROUP, WITHOUT BEING IN THE GROUP A COLUMN FROM A DIFFERENT TABLE WONT WORK, HERE TWO COLUMN FROM A DIFFERENT TABLE THAT BEING NAME AND INGRIDENET(AS CONTAINS) WAS ADDED, SIMILARLY IF A COLUMN WAS ADDED FROM PIZZAS.PIZZATYPE ID, JOIN WONT BE REQUIRED AS IS ALREADY JOIN USED. 
+
+-- Advanced:
+-- Q11Calculate the percentage contribution of each pizza type to total revenue.
+Breaking down the question requirement
+-- total revenve 
+-- contributed by each pizzatype
+-- in percerntage
+
+-- FOR EACH PIZZA'S CONTRIBUTION TO REVENUE IN PERCENTAGE 
+  -- SELECT 
+--       round(SUM(pizzas.price * order_details.quantity),2) AS Rev,
+--       pizza_types.name AS PName,
+--       pizza_types.pizza_type_id AS PizzaType,
+--      --  (((SUM(pizzas.price * order_details.quantity)/SUM((sum(pizzas.price * order_details.quantity)))*100) AS PERCENTOFTOTAL, SUMMATION OF SUMMATION ISNT ALLOWED IN SQL A WINDOW FUNCTION IS NEEDED HERE. AS IS BELOW
+--    ROUND(
+--            SUM(pizzas.price * order_details.quantity) * 100.0 / SUM(SUM(pizzas.price * order_details.quantity)) OVER (), 2
+--       ) AS Percent_Of_Total
+--   FROM
+--       order_details
+--           JOIN
+--       pizzas ON order_details.pizza_id = pizzas.pizza_id
+--       join pizza_types
+--       on pizzas.pizza_type_id=pizza_types.pizza_type_id
+--   GROUP BY PizzaType, pizza_types.name
+--   ORDER BY Rev DESC ;
+
+-- For CAtegory
+ SELECT 
+     round(SUM(pizzas.price * order_details.quantity),2) AS Rev,
+     pizza_types.category AS PizzaCATEGORY, 
+  ROUND(
+          SUM(pizzas.price * order_details.quantity) * 100.0 /
+          SUM(SUM(pizzas.price * order_details.quantity)) OVER (), 2 -- (THIS IS HOW THE TOTAL SALES EXPRESSION CAN BE WRITTEN)
+ -- (select round(sum(order_details.quantity * pizzas.price),2) as Total_Sales
+ -- from order_details join pizzas
+ -- on pizzas.pizza_id = order_details.pizza_id
+ --     )
+     ) AS Percent_Of_Total
+ FROM
+     order_details
+         JOIN
+     pizzas ON order_details.pizza_id = pizzas.pizza_id
+     join pizza_types
+     on pizzas.pizza_type_id=pizza_types.pizza_type_id
+ GROUP BY PizzaCATEGORY
+ ORDER BY Rev DESC 
+  ;
+
+
+-- Q12 Analyze the cumulative revenue generated over time. 
+
+-- REVENUE GENERATED EACH DAY, AND GIVING A CUMMULATIVE FIGURE OVER THE ENTIRE TIME
+
+select Order_DAY, Day_Rev,
+sum(Day_Rev) over (order by Order_DAY) as Cumm_REV
+from
+(select orders.order_date as Order_DAY,
+round(sum( order_details.quantity * pizzas.price),0) as Day_REV
+from order_details
+join pizzas
+on order_details.pizza_id = pizzas.pizza_id
+join orders
+on order_details.order_id = orders.order_id
+group by Order_DAY) as Day_Sales;
+
+-- The tutorial showed only the cummulative rev, I have shown the the CUmmulative as well as the day Rev. ALHAMDOLILLAH a bit of addition.
+
+
+-- Q13 Determine the top 3 most ordered pizza types based on revenue for each pizza category.
+-- things needed, Revenue for each pizza CAtergory, Pizza types most ordered, 
+select P_NAME, Revenue, P_Category,Rnk from
+(select P_Category, P_NAME, Revenue,
+rank () over(partition by P_Category order by Revenue desc ) as Rnk
+from (select pizza_types.category as P_Category, pizza_types.pizza_type_id, pizza_types.name as P_NAME,
+sum(order_details.quantity*pizzas.price) as Revenue from
+pizzas
+join 
+pizza_types
+on 
+pizza_types.pizza_type_id = pizzas.pizza_type_id
+join
+order_details
+on
+pizzas.pizza_id = order_details.pizza_id
+group by P_Category, pizza_types.pizza_type_id,P_NAME
+) as RevCAT) as RNKCAT
+where Rnk <=3
+ ;
+-- the query was resolved by creating subqueries, and a ranking funtion was a learning in this.
+
+End of Solutions
